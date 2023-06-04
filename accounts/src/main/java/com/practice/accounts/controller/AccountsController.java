@@ -8,12 +8,15 @@ import com.practice.accounts.model.*;
 import com.practice.accounts.repository.AccountsRepository;
 import com.practice.accounts.service.client.CardsFeignClient;
 import com.practice.accounts.service.client.LoansFeignClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 public class AccountsController {
 
@@ -50,11 +53,31 @@ public class AccountsController {
     }
 
     @PostMapping("/myCustomerDetails")
+    @CircuitBreaker(name = "detailsForCustomerSupportApp", fallbackMethod = "myCustomerDetailsFallback")
     public CustomerDetails getCustomerDetails(@RequestBody Customer customer){
         CustomerDetails customerDetails = new CustomerDetails();
         customerDetails.setAccounts(accountsRepository.findByCustomerId(customer.getCustomerId()));
         customerDetails.setCards(cardsFeignClient.getCardDetails(customer));
         customerDetails.setLoans(loansFeignClient.getLoansDetails(customer));
+        return customerDetails;
+    }
+
+    private CustomerDetails myCustomerDetailsFallback(Customer customer, Throwable t){
+        CustomerDetails customerDetails = new CustomerDetails();
+        customerDetails.setAccounts(accountsRepository.findByCustomerId(customer.getCustomerId()));
+//        try{
+//            customerDetails.setCards(cardsFeignClient.getCardDetails(customer));
+//        }catch (Exception e){
+//            try{
+//                customerDetails.setLoans(loansFeignClient.getLoansDetails(customer));
+//                return customerDetails;
+//            }catch (Exception e1){
+//                log.info("Could not add Loans info because: {}", e1);
+//                return customerDetails;
+//            }
+//        }
+        //customerDetails.setCards(cardsFeignClient.getCardDetails(customer));
+        //customerDetails.setLoans(loansFeignClient.getLoansDetails(customer));
         return customerDetails;
     }
 }
