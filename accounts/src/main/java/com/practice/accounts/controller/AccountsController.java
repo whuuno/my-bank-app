@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.practice.accounts.config.AccountsServiceConfig;
-import com.practice.accounts.model.Accounts;
-import com.practice.accounts.model.Customer;
-import com.practice.accounts.model.Properties;
+import com.practice.accounts.model.*;
 import com.practice.accounts.repository.AccountsRepository;
+import com.practice.accounts.service.client.CardsFeignClient;
+import com.practice.accounts.service.client.LoansFeignClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +22,12 @@ public class AccountsController {
 
     @Autowired
     AccountsServiceConfig accountsConfig;
+
+    @Autowired
+    CardsFeignClient cardsFeignClient;
+
+    @Autowired
+    LoansFeignClient loansFeignClient;
 
     @PostMapping("/myAccount")
     public Accounts getAccountDetails(@RequestBody Customer customer) {
@@ -41,5 +47,14 @@ public class AccountsController {
                 accountsConfig.getMailDetails() ,accountsConfig.getActiveBranches());
         String jsonString = ow.writeValueAsString(properties);
         return jsonString;
+    }
+
+    @PostMapping("/myCustomerDetails")
+    public CustomerDetails getCustomerDetails(@RequestBody Customer customer){
+        CustomerDetails customerDetails = new CustomerDetails();
+        customerDetails.setAccounts(accountsRepository.findByCustomerId(customer.getCustomerId()));
+        customerDetails.setCards(cardsFeignClient.getCardDetails(customer));
+        customerDetails.setLoans(loansFeignClient.getLoansDetails(customer));
+        return customerDetails;
     }
 }
