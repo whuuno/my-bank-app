@@ -9,6 +9,7 @@ import com.practice.accounts.repository.AccountsRepository;
 import com.practice.accounts.service.client.CardsFeignClient;
 import com.practice.accounts.service.client.LoansFeignClient;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,7 +54,8 @@ public class AccountsController {
     }
 
     @PostMapping("/myCustomerDetails")
-    @CircuitBreaker(name = "detailsForCustomerSupportApp", fallbackMethod = "myCustomerDetailsFallback")
+    //@CircuitBreaker(name = "detailsForCustomerSupportApp", fallbackMethod = "myCustomerDetailsFallback")
+    @Retry(name = "retryForCustomerDetails", fallbackMethod = "myCustomerDetailsFallback")
     public CustomerDetails getCustomerDetails(@RequestBody Customer customer){
         CustomerDetails customerDetails = new CustomerDetails();
         customerDetails.setAccounts(accountsRepository.findByCustomerId(customer.getCustomerId()));
