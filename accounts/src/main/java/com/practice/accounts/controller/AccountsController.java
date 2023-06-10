@@ -13,10 +13,7 @@ import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -57,11 +54,11 @@ public class AccountsController {
     @PostMapping("/myCustomerDetails")
     //@CircuitBreaker(name = "detailsForCustomerSupportApp", fallbackMethod = "myCustomerDetailsFallback")
     @Retry(name = "retryForCustomerDetails", fallbackMethod = "myCustomerDetailsFallback")
-    public CustomerDetails getCustomerDetails(@RequestBody Customer customer){
+    public CustomerDetails getCustomerDetails(@RequestHeader("myBankApp-correlation-id") String correlationId, @RequestBody Customer customer){
         CustomerDetails customerDetails = new CustomerDetails();
         customerDetails.setAccounts(accountsRepository.findByCustomerId(customer.getCustomerId()));
-        customerDetails.setCards(cardsFeignClient.getCardDetails(customer));
-        customerDetails.setLoans(loansFeignClient.getLoansDetails(customer));
+        customerDetails.setCards(cardsFeignClient.getCardDetails(correlationId, customer));
+        customerDetails.setLoans(loansFeignClient.getLoansDetails(correlationId, customer));
         return customerDetails;
     }
 
